@@ -2,6 +2,8 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QSortFilterProxyModel>
+#include <QStandardItemModel>
 
 namespace Ui {
 class MainWindow;
@@ -18,8 +20,14 @@ public:
 private slots:
     void on_pushButton_clicked();
 
+    void on_plainTextEdit_dir_updateRequest(const QRect &rect, int dy);
+
+    void on_pushButton_2_clicked();
+
 private:
     Ui::MainWindow *ui;
+    QStandardItemModel *model;
+    QSortFilterProxyModel *modelProxy;
 };
 
 #endif // MAINWINDOW_H

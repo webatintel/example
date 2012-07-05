@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?> 
+<commands>
+
+    <command>
+        <cmd>find /tmp -type f -printf "%f\n"</cmd>
+        <desc>Only print the file name</desc>
+        <rank>0</rank>
+    </command>
+
+    <command>
+        <cmd>grep -r "str" ./</cmd>
+        <desc>Search string in directory recursively</desc>
+        <rank>0</rank>
+    </command>
+
+    <command>
+        <cmd>find ./ -type f | wc -l</cmd>
+        <desc>Calculate number of files, including sub directory</desc>
+        <rank>1</rank>
+    </command>
+
+</commands>
+
