@@ -19,5 +19,48 @@
         <rank>1</rank>
     </command>
 
+    <command>
+        <cmd>:w !sudo tee %</cmd>
+        <desc>Write a readonly file in vi</desc>
+        <rank>1</rank>
+    </command>
+
+    <command>
+        <cmd>sudo !!</cmd>
+        <desc>Execute last command with sudo</desc>
+        <rank>1</rank>
+    </command>
+
+    <command>
+        <cmd>^foo^bar</cmd>
+        <desc>Replace str "foo" in last command with "bar"</desc>
+        <rank>1</rank>
+    </command>
+
+    <command>
+        <cmd>!!:s/foo/bar</cmd>
+        <desc>Replace str "foo" in last command with "bar"</desc>
+        <rank>0</rank>
+    </command>
+
+    <command>
+        <cmd>cp filename{,.bk}</cmd>
+        <desc>Backup file</desc>
+        <rank>0</rank>
+    </command>
+
+    <command>
+        <cmd>history | awk '{a[$2]++}END{for(i in a){print a[i] " " i}}' | sort -rn | head</cmd>
+        <desc>List 10 most used commands</desc>
+        <rank>0</rank>
+    </command>
+
+    <command>
+        <cmd></cmd>
+        <desc></desc>
+        <rank>0</rank>
+    </command>
+
+
 </commands>
 
