@@ -1,6 +1,0 @@
-[Find]
-# Only print the file name
-find /tmp -type f -printf "%f\n"
-grep -r "str" ./
-
-
