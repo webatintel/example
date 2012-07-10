@@ -56,11 +56,15 @@
     </command>
 
     <command>
+        <cmd>git log --summary 223286b.. | grep 'Author:' | wc -l</cmd>
+        <desc>count git commits since specific commit</desc>
+        <rank>0</rank>
+    </command>
+
+    <command>
         <cmd></cmd>
         <desc></desc>
         <rank>0</rank>
     </command>
-
-
 </commands>
 
