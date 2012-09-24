@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<!-- saved from url=(0081)http://flashcanvas.net/examples/dl.dropbox.com/u/1865210/mindcat/canvas_perf.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Canvas Perf</title>
+    <!--[if lt IE 9]><script type="text/javascript" src="../../../../../bin/flashcanvas.js"></script><![endif]-->
+    <script class="javascript" src="util.js"></script>
+    <script class="javascript" src="canvas_perf.js"></script>
+    <script class="javascript" src="canvas_demo_spiral_stars.js"></script>
+  <style>#haloword-pron { background: url(chrome-extension://bhkcehpnnlgncpnefpanachijmhikocj/img/icon.svg) -94px -32px; }#haloword-pron:hover { background: url(chrome-extension://bhkcehpnnlgncpnefpanachijmhikocj/img/icon.svg) -110px -32px; }#haloword-open { background: url(chrome-extension://bhkcehpnnlgncpnefpanachijmhikocj/img/icon.svg) -94px -16px; }#haloword-open:hover { background: url(chrome-extension://bhkcehpnnlgncpnefpanachijmhikocj/img/icon.svg) -110px -16px; }#haloword-close { background: url(chrome-extension://bhkcehpnnlgncpnefpanachijmhikocj/img/icon.svg) -94px 0; }#haloword-close:hover { background: url(chrome-extension://bhkcehpnnlgncpnefpanachijmhikocj/img/icon.svg) -110px 0; }</style></head>
+
+  <body onload="perf=canvas_perf();demo=canvas_demo_spiral_stars()">
+    <h1>Canvas Performance Benchmark</h1>
+
+    <div style="position:absolute; top:50px; left:10px">
+      <button onclick="demo.stop();perf.start()">Start Perf</button>
+      <input id="alpha" type="checkbox">with α
+      <button onclick="perf.stop();demo.start()">Demo Start</button>
+      <button onclick="perf.stop();demo.stop()">Stop</button>
+      <br>
+    
+      <canvas id="cvs" width="480px" height="480px" style="background-color:black">
+      </canvas>
+    </div>
+
+    <div style="position:absolute; top:50px; left:500px; width:400px">
+      <button onclick="log.clear()">Clear</button>
+      <pre id="output" style="margin:0px;
+                  overflow: auto;
+                  height: 480px;
+                  border: 1px solid #000;
+                  background-color: #eee;
+                  ">&nbsp;Ready!!
+</pre>
+    </div>
+    
+  
+
+<div id="haloword-lookup" class="ui-widget-content ui-draggable"><div id="haloword-title"><span id="haloword-word"></span><a herf="#" id="haloword-pron" class="haloword-button" title="发音"></a><audio id="haloword-audio"></audio><div id="haloword-control-container"><a href="http://flashcanvas.net/examples/dl.dropbox.com/u/1865210/mindcat/canvas_perf.html#" id="haloword-open" class="haloword-button" title="查看单词详细释义" target="_blank"></a><a herf="#" id="haloword-close" class="haloword-button" title="关闭查询窗"></a></div><br style="clear: both;"></div><div id="haloword-content"></div></div></body></html>
