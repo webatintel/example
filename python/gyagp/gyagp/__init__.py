@@ -8,3 +8,14 @@ def check():
 		print('Module pywin32 has been installed')
 	except ImportError:
 		print('Module pywin32 has not been installed')
+		
+__all__ = [
+    # exceptions
+
+    # constants
+    
+	# classes
+    
+	# functions
+	'check'
+    ]		
