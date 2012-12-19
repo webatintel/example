@@ -1,0 +1,7 @@
+Using easy_install
+==================
+
+The easiest way to install this project from sources is using easy_install.
+Get the latest easy_install version from http://pypi.python.org/pypi/setuptools and just run: easy_install psutil
+This should get the most updated psutil version from the Python pypi repository, unpack it, compile it and install it automatically.
+
