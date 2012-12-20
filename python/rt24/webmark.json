@@ -1,0 +1,13 @@
+{
+    "chrome":{
+        "binary":"placeholder",
+        "proxy":{
+            "proxyType":"manual",
+            "httpProxy":"http://proxy.pd.intel.com:911",
+            "noProxy":"localhost,127.0.0.1,*.intel.com"
+        },
+        "benchmarks":[
+            {"name":"SunSpider"}
+        ]
+    }
+}

@@ -20,7 +20,7 @@ def checkUpdate():
     global lines
     global hasUpdate
 
-    urlPrefix = "http://wrt-buildbot.bj.intel.com/snapshots/"
+
 
     file = open('status.txt')
     lines = file.readlines()
@@ -57,7 +57,7 @@ def checkUpdate():
                 startDate = time.strptime('20120101', '%d-%b-%Y')
                 
             # Get the new queue needs to be updated
-            url = urlPrefix + category
+            url = util.urlPrefix + category
             try:
                 u = urllib2.urlopen(url)
             except BadStatusLine:

@@ -1,0 +1,11 @@
+* Install service
+python service.py install
+
+* Start service
+python service.py start
+
+* Stop service
+python service.py stop
+
+* Remove service
+python service.py remove

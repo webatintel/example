@@ -1,19 +1,22 @@
 import os
 import re
 import time
+import sys
 
+urlPrefix = "http://wrt-buildbot.bj.intel.com/snapshots/"
 queuePrefix = 'queue='
 
 debugMode = 0
 
 def dlog(str):
-    if not debugMode:
-        return
+    msg = time.strftime('%Y-%m-%d %X', time.localtime(time.time())) + '    ' + str + '\n'
+    if debugMode:
+        logFile = open(sys.path[0] + '/log.txt', 'a')
+        logFile.write(msg)
+        logFile.close()
+    else:
+        print msg
         
-    logFile = open('log.txt', 'a')
-    logFile.write(time.strftime('%Y-%m-%d %X', time.localtime(time.time())) + '    ' + str + '\n')
-    logFile.close()
-
 def writeStatus(lines):
     f = open("status.txt", "w")
     for line in lines:

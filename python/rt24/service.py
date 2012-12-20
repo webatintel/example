@@ -40,8 +40,8 @@ class Service(win32serviceutil.ServiceFramework):
                 break
             else:
                 try:
-                    os.system("python d:\\user\\ygu5\\project\\rt24\\check-update.py")
-                    os.system("python d:\\user\\ygu5\\project\\rt24\\run-test.py")
+                    os.system("python d:\\rt24\\check-update.py")
+                    os.system("python d:\\rt24\\run-test.py")
                 except:
                     pass 
 

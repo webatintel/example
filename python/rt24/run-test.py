@@ -4,14 +4,73 @@ import util
 import time
 import random
 import sys
+import urllib2
+import shutil
 
 category = ''
 build = 0
+testMethod = 'qa'
+
+def downloadBinary():
+    os.chdir('binary/' + category)
+    
+    # Download zip file
+    zipFile = build + '.zip'
+    if not os.path.exists(build + '.zip'):
+        util.dlog('Downloading ' + category + '/' + build)
+        url = util.urlPrefix + category + '/' + build + '/chrome-win32.zip'
+        f = urllib2.urlopen(url);
+        data = f.read()
+        with open(zipFile, 'wb') as code:
+            code.write(data)
+        util.dlog('Download ' + category + '/' + build + ' finished.')  
+
+    if not os.path.exists(zipFile):
+        util.dlog("Download failed")
+        os.chdir(sys.path[0])
+        return
+        
+    # Extract zip file
+    if os.path.exists(build):
+        shutil.rmtree(build)
+        
+    os.system('unzip ' + build + '.zip')
+    os.rename('chrome-win32', build)
+    
+    # Handle webmark config file
+    if testMethod != 'webmark':
+        os.chdir(sys.path[0])
+        return
+        
+    configFile = build + '.json'    
+    if os.path.exists(configFile):
+        os.remove(configFile)
+    
+    shutil.copyfile(sys.path[0] + '/webmark.json', configFile)
+    f = open(configFile)
+    lines = f.readlines()
+    f.close()
+    
+    placeHolder = 'placeholder'
+    for lineIndex in range(0, len(lines)):
+        if re.search(placeHolder, lines[lineIndex]):
+            line = lines[lineIndex]
+            line = line.replace(placeHolder, os.getcwd() + '/' + build + '/chrome.exe')
+            line = line.replace('\\', '/')
+            lines[lineIndex] = line
+            break
+    
+    f = open(configFile, "w")
+    for line in lines:
+        f.write(line)
+    f.close() 
+    
+    os.chdir(sys.path[0])
 
 def updateStatus():
-    file = open('status.txt')
-    lines = file.readlines()
-    file.close()
+    f = open('status.txt')
+    lines = f.readlines()
+    f.close()
     
     categoryPattern = re.compile("category=(.*)")
     queuePattern = re.compile("queue=(.*)")
@@ -38,7 +97,13 @@ def updateStatus():
 
 def runTest():
     util.dlog('runTest begins. category=' + category + ' build=' + str(build))
-    time.sleep(random.uniform(5, 15))
+    if testMethod == 'webmark':
+        os.system('python WebMark/webmark.py binary/' + category + '/' + build + '.json')
+    
+    command = "python qa/ts-rt24/ts-rt24-testtools/run_qatest/run_qatest.py --type=QATEST-RUN-SLAVE --test-properties={'buildername':'" + category + "-builder','buildnumber':'" + build + "','mastername':'rt24','scheduler':'','slavename':'" + category + "','testcfg':'','restcfg_uri_default':'','testcfg_uri_temp':''}"
+    print command
+    os.system(command)
+    #time.sleep(random.uniform(5, 15))
     util.dlog('runTest ends.   category=' + category + ' build=' + str(build))
     
 
@@ -91,6 +156,8 @@ if __name__ == '__main__':
     hasUpdate = False
     while util.atomOp(getAvailable):
         hasUpdate = True
+        if testMethod == 'webmark':
+            downloadBinary()
         runTest()
         util.atomOp(updateStatus)
     
