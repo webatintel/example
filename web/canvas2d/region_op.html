@@ -1,0 +1,62 @@
+<!DOCTYPE HTML>
+<html>
+  <body>
+    <canvas id="myCanvas" width="600" height="480"></canvas>
+    <script>
+    function draw() {        
+      var canvas = document.getElementById('myCanvas');
+      var context = canvas.getContext('2d');
+
+      var squareWidth = 60;
+      var circleRadius = 40;
+      var shapeOffset = 60;
+      var arr = [];
+
+      arr.push('source-atop');
+      //arr.push('source-in');
+      //arr.push('source-out');
+      //arr.push('source-over');
+      //arr.push('destination-atop');
+      //arr.push('destination-in');
+      //arr.push('destination-out');
+      //arr.push('destination-over');
+      //arr.push('lighter');
+      //arr.push('darker');
+      //arr.push('xor');
+      //arr.push('copy');
+
+
+      // draw each of the operations
+      for(var n = 0; n < arr.length; n++) {
+        var thisOperation = arr[n];
+    
+        context.save();
+        
+        // clear temp context
+        context.clearRect(0, 0, canvas.width, canvas.height);
+    
+        // draw rectangle (destination)
+        context.beginPath();
+        context.rect(0, 0, squareWidth, squareWidth);
+        context.fillStyle = 'blue';
+        context.fill();
+    
+        // set global composite
+        context.globalCompositeOperation = thisOperation;
+    
+        // draw circle (source)
+        context.beginPath();
+        context.arc(shapeOffset, shapeOffset, circleRadius, 0, 2 * Math.PI, false);
+        context.fillStyle = 'red';
+        context.fill();
+        context.restore();
+    
+      }
+      console.log(Date.now());
+    }     
+     
+    var requestAnimationFrame = window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame;
+    requestAnimationFrame(draw);
+    </script>
+  </body>
+</html>
