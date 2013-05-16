@@ -1,0 +1,65 @@
+<script>
+  // Use strict
+  "use strict"
+</script>
+<script>
+  /* this in inner function */
+  // Case 1
+  var name = "clever coder";
+  var person = {
+    name : "foocoder",
+    hello : function(sth){
+      console.log(this.name + " says " + sth);
+    }
+  }
+  person.hello("hello world"); //foocoder says hello world
+
+  // Case 2
+  var name = "clever coder";
+  var person = {
+    name : "foocoder",
+    hello : function(sth){
+      var sayhello = function(sth) {
+        console.log(this.name + " says " + sth);
+      };
+      sayhello(sth);
+    }
+  }
+
+  person.hello("hello world");//clever coder says hello world
+  
+  // Case 3
+  var name = "clever coder";
+  var person = {
+    name : "foocoder",
+    hello : function(sth){
+      var that = this;
+      var sayhello = function(sth) {
+        console.log(that.name + " says " + sth);
+      };
+      sayhello(sth);
+    }
+  }
+  person.hello("hello world");//foocoder says hello world
+  
+</script>
+
+<script>
+  /* bind */
+  var x = 9; 
+  var module = {
+    x: 81,
+    getX: function() { return this.x; }
+  };
+   
+  console.log(module.getX()); // 81
+   
+  var getX = module.getX;
+  console.log(getX()); // 9, because in this case, "this" refers to the global object
+   
+  // create a new function with 'this' bound to module
+  var boundGetX = getX.bind(module);
+  console.log(boundGetX()); // 81  
+  
+</script>
+
