@@ -51,15 +51,50 @@
     x: 81,
     getX: function() { return this.x; }
   };
-   
+
   console.log(module.getX()); // 81
-   
+
   var getX = module.getX;
   console.log(getX()); // 9, because in this case, "this" refers to the global object
-   
+
   // create a new function with 'this' bound to module
   var boundGetX = getX.bind(module);
   console.log(boundGetX()); // 81  
-  
+
+</script>
+
+<script>
+  // Define object: hybrid of constructor and prototype
+  function Car(color) {
+    this.color = color;
+    this.drivers = new Array("Mike", "Sue");
+  }
+
+  Car.prototype.showColor = function() {
+    console.log(this.color);
+  }
+
+</script>
+
+<script>
+  // Inherit
+  function A(sColor) {
+    this.color = sColor;
+  }
+
+  A.prototype.sayColor = function() {
+    console.log(this.color);
+  }
+
+  function B(sColor, sName) {
+    A.call(this, sColor);
+    this.name = sName;
+  }
+
+  B.prototype = new A();
+  B.prototype.sayName = function() {
+    console.log(this.name);
+  }
+
 </script>
 
