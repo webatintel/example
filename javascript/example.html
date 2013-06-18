@@ -135,3 +135,18 @@
     cachejs('./alert.js');
 </script>
 
+<script>
+  console.log(Object instanceof Object);//true 
+  console.log(Function instanceof Function);//true 
+  console.log(Number instanceof Number);//false 
+  console.log(String instanceof String);//false 
+   
+  console.log(Function instanceof Object);//true 
+
+  function Foo(){} 
+  var foo = new Foo();  
+  console.log(Foo instanceof Function);//true 
+  console.log(Foo instanceof Foo);//false
+  
+</script>
+
