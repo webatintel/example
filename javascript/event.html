@@ -1,0 +1,53 @@
+<script>
+  var i;
+  var timeFunction;
+  var infoArray = [];
+  var timeArray = [];
+
+  function fromDate() {
+    return new Date();
+  }
+
+  function fromPerformance() {
+    return window.performance.now();
+  }
+  
+  if (typeof window.performance == 'object' && typeof window.performance.now == 'function')
+    timeFunction = fromPerformance;
+  else
+    timeFunction = fromDate;
+
+  var logEvent = function(info) {
+    infoArray.push(info);
+    timeArray.push(timeFunction());
+  };
+
+  // Doesn't trigger
+  window.addEventListener("readystatechange", function(event) {
+    logEvent("window." + event.type + ": document.readyState=" + document.readyState);
+  });
+
+  document.addEventListener("readystatechange", function(event) {
+    logEvent("document." + event.type + ": document.readyState=" + document.readyState);
+  });
+
+  window.addEventListener("DOMContentLoaded", function(event) {
+    logEvent("window." + event.type);
+  });
+
+  document.addEventListener("DOMContentLoaded", function(event) {
+    logEvent("document." + event.type);
+  });  
+
+  window.addEventListener("load", function(event) {
+    logEvent("window." + event.type);
+    for (i = 0; i < infoArray.length; i++) {
+      console.log(infoArray[i]);
+      console.log(timeArray[i]);
+    }
+  });
+
+</script>
+
+<body>
+</body>
