@@ -1,18 +1,17 @@
-    // g++ main.c -lGL -lGLU -lGLEW -lglut -o main
+/* build command
+g++ main.cpp -std=gnu++11 -lGL -lglut -LGLES3 -o main
+*/
 
-#include <GL/glew.h>
-#include <GL/glut.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdint>
+#include <iostream>
+#include <vector>
+using namespace std;
+#include "GL/freeglut.h"
+#include <GLES3/gl3.h>
 
-#define printOpenGLError() printOglError(__FILE__, __LINE__)
+GLuint p;
 
-GLint loc;
-GLuint v,f,f2,p;
-float t = 0;
-
-char* textFileRead(char* fn) {
+char* read_file(const char* fn) {
     FILE *fp;
     char* content = NULL;
     int count=0;
@@ -36,182 +35,89 @@ char* textFileRead(char* fn) {
     return content;
 }
 
-int textFileWrite(char* fn, char* s) {
-    FILE *fp;
-    int status = 0;
-
-    if (fn != NULL) {
-        fp = fopen(fn,"w");
-        if (fp != NULL) {
-            if (fwrite(s,sizeof(char),strlen(s),fp) == strlen(s))
-                status = 1;
-            fclose(fp);
-        }
-    }
-    return(status);
+void check_shader(GLuint shader) {
+    GLint success;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    if (success != GL_TRUE)
+        exit(1);
 }
 
-void changeSize(int w, int h) {
-    // Prevent a divide by zero, when window is too short
-    // (you cant make a window of zero width).
-    if(h == 0)
-        h = 1;
 
-    float ratio = 1.0* w / h;
-
-    // Reset the coordinate system before modifying
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-
-    // Set the viewport to be the entire window
-    glViewport(0, 0, w, h);
-
-    // Set the correct perspective.
-    gluPerspective(45,ratio,1,100);
-    glMatrixMode(GL_MODELVIEW);
+GLuint load_shader(const char *shader_name, GLenum type) {
+    GLuint shader = glCreateShader(type);
+    char *shader_source = read_file(shader_name);
+    glShaderSource(shader, 1, &shader_source, NULL);
+    free(shader_source);
+    glCompileShader(shader);
+    check_shader(shader);
+    return shader;
 }
 
-void renderScene(void) {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glLoadIdentity();
-    gluLookAt(0.0,5.0,5.0,
-              0.0,0.0,0.0,
-              0.0f,1.0f,0.0f);
-    glUniform1f(loc, t);
-    glutSolidTeapot(1);
-    t+=0.01;
-    glutSwapBuffers();
-}
-
-void processNormalKeys(unsigned char key, int x, int y) {
-    if (key == 27)
-        exit(0);
-}
-
-int printOglError(char* file, int line)
-{
-    //
-    // Returns 1 if an OpenGL error occurred, 0 otherwise.
-    //
-    GLenum glErr;
-    int    retCode = 0;
-
-    glErr = glGetError();
-    while (glErr != GL_NO_ERROR)
-    {
-        printf("glError in file %s @ line %d: %s\n", file, line, gluErrorString(glErr));
-        retCode = 1;
-        glErr = glGetError();
-    }
-    return retCode;
-}
-
-void printShaderInfoLog(GLuint obj)
-{
-    int infologLength = 0;
-    int charsWritten  = 0;
-    char* infoLog;
-
-    glGetShaderiv(obj, GL_INFO_LOG_LENGTH, &infologLength);
-
-    if (infologLength > 0)
-    {
-        infoLog = (char* )malloc(infologLength);
-        glGetShaderInfoLog(obj, infologLength, &charsWritten, infoLog);
-        printf("%s\n",infoLog);
-        free(infoLog);
-    }
-}
-
-void printProgramInfoLog(GLuint obj)
-{
-    int infologLength = 0;
-    int charsWritten  = 0;
-    char* infoLog;
-
-    glGetProgramiv(obj, GL_INFO_LOG_LENGTH,&infologLength);
-
-    if (infologLength > 0)
-    {
-        infoLog = (char* )malloc(infologLength);
-        glGetProgramInfoLog(obj, infologLength, &charsWritten, infoLog);
-        printf("%s\n",infoLog);
-        free(infoLog);
-    }
-}
-
-void setShaders() {
-    char* vs = NULL, *fs = NULL, *fs2 = NULL;
-
-    v = glCreateShader(GL_VERTEX_SHADER);
-    f = glCreateShader(GL_FRAGMENT_SHADER);
-    f2 = glCreateShader(GL_FRAGMENT_SHADER);
-
-    vs = textFileRead(const_cast<char *>("shader1.vert"));
-    fs = textFileRead(const_cast<char *>("shader1.frag"));
-
-    const char* vv = vs;
-    const char* ff = fs;
-
-    glShaderSource(v, 1, &vv,NULL);
-    glShaderSource(f, 1, &ff,NULL);
-
-    free(vs);
-    free(fs);
-
-    glCompileShader(v);
-    glCompileShader(f);
-
-    printShaderInfoLog(v);
-    printShaderInfoLog(f);
-    printShaderInfoLog(f2);
-
-    p = glCreateProgram();
-    glAttachShader(p,v);
-    glAttachShader(p,f);
-
-    glLinkProgram(p);
-    printProgramInfoLog(p);
+void renderFunction() {
+    glClearColor(0.0, 0.0, 0.0, 0.0);
+    glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(p);
 
-    cout << glGetError() << endl;
-    GLint loc_world23 = glGetUniformLocation(p, "world23");
-    vector<uint8_t>* zero_buffer;
-    uint32_t size = sizeof(GLfloat) * 6;
+    // logic begin
+    GLint world23 = glGetUniformLocation(p, "world23");
+    GLint world24 = glGetUniformLocation(p, "world24");
+    GLint world32 = glGetUniformLocation(p, "world32");
+    GLint world34 = glGetUniformLocation(p, "world34");
+    GLint world4 = glGetUniformLocation(p, "world4");
+    GLint world42 = glGetUniformLocation(p, "world42");
+    GLint world43 = glGetUniformLocation(p, "world43");
+
+    cout << world23 << endl
+         << world24 << endl
+         << world32 << endl
+         << world34 << endl
+         << world4 << endl
+         << world42 << endl
+         << world43 << endl;
+
+    vector<uint8_t>* zero_buffer = new vector<uint8_t>();
+    uint32_t size = sizeof(GLfloat) * 16;
     zero_buffer->resize(size);
-    const void* zero = &(*zero_buffer)[0];
-    glUniformMatrix2x3fv(loc, 1, false, reinterpret_cast<const GLfloat*>(zero));
+    void* zero = &(*zero_buffer)[0];
     cout << glGetError() << endl;
+
+    glUniformMatrix4fv(world4, 1, false, reinterpret_cast<const GLfloat*>(zero));
+    cout << glGetError() << endl;
+
+    glUniformMatrix2x3fv(world23, 1, false, reinterpret_cast<const GLfloat*>(zero));
+    cout << glGetError() << endl;
+    glUniformMatrix3x2fv(world32, 1, false, reinterpret_cast<const GLfloat*>(zero));
+    cout << glGetError() << endl;
+
+    glUniformMatrix4x2fv(world42, 1, false, reinterpret_cast<const GLfloat*>(zero));
+    cout << glGetError() << endl;
+    glUniformMatrix4x3fv(world43, 1, false, reinterpret_cast<const GLfloat*>(zero));
+    cout << glGetError() << endl;
+
+    // logic end
+
+    glutSwapBuffers();
 }
 
-int main(int argc, char* *argv) {
+int main(int argc, char** argv) {
     glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
+    glutInitContextVersion(3, 0);
+    glutInitDisplayMode(GLUT_SINGLE);
+    glutInitWindowSize(500, 500);
     glutInitWindowPosition(100, 100);
-    glutInitWindowSize(320, 320);
-    glutCreateWindow("Sample");
+    glutCreateWindow("OpenGL Example");
 
-    glutDisplayFunc(renderScene);
-    glutIdleFunc(renderScene);
-    glutReshapeFunc(changeSize);
-    glutKeyboardFunc(processNormalKeys);
+    p = glCreateProgram();
 
-    glEnable(GL_DEPTH_TEST);
-    glClearColor(1.0,1.0,1.0,1.0);
-//  glEnable(GL_CULL_FACE);
+    GLuint vshader = load_shader("shader1.vert", GL_VERTEX_SHADER);
+    GLuint fshader = load_shader("shader1.frag", GL_FRAGMENT_SHADER);
 
-    glewInit();
-    if (glewIsSupported("GL_VERSION_2_0"))
-        printf("Ready for OpenGL 2.0\n");
-    else {
-        printf("OpenGL 2.0 not supported\n");
-        exit(1);
-    }
+    glAttachShader(p, vshader);
+    glAttachShader(p, fshader);
 
-    setShaders();
-
+    glLinkProgram(p);
+    glutDisplayFunc(renderFunction);
     glutMainLoop();
-
     return 0;
 }
