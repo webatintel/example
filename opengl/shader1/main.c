@@ -1,3 +1,5 @@
+    // g++ main.c -lGL -lGLU -lGLEW -lglut -o main
+
 #include <GL/glew.h>
 #include <GL/glut.h>
 #include <stdio.h>
@@ -10,40 +12,9 @@ GLint loc;
 GLuint v,f,f2,p;
 float t = 0;
 
-int main(int argc, char **argv) {
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
-    glutInitWindowPosition(100, 100);
-    glutInitWindowSize(320, 320);
-    glutCreateWindow("Sample");
-
-    glutDisplayFunc(renderScene);
-    glutIdleFunc(renderScene);
-    glutReshapeFunc(changeSize);
-    glutKeyboardFunc(processNormalKeys);
-
-    glEnable(GL_DEPTH_TEST);
-    glClearColor(1.0,1.0,1.0,1.0);
-//  glEnable(GL_CULL_FACE);
-
-    glewInit();
-    if (glewIsSupported("GL_VERSION_2_0"))
-        printf("Ready for OpenGL 2.0\n");
-    else {
-        printf("OpenGL 2.0 not supported\n");
-        exit(1);
-    }
-
-    setShaders();
-
-    glutMainLoop();
-
-    return 0;
-}
-
-char *textFileRead(char *fn) {
+char* textFileRead(char* fn) {
     FILE *fp;
-    char *content = NULL;
+    char* content = NULL;
     int count=0;
 
     if (fn != NULL) {
@@ -55,7 +26,7 @@ char *textFileRead(char *fn) {
             rewind(fp);
 
             if (count > 0) {
-                content = (char *)malloc(sizeof(char) * (count+1));
+                content = (char* )malloc(sizeof(char) * (count+1));
                 count = fread(content,sizeof(char),count,fp);
                 content[count] = '\0';
             }
@@ -65,7 +36,7 @@ char *textFileRead(char *fn) {
     return content;
 }
 
-int textFileWrite(char *fn, char *s) {
+int textFileWrite(char* fn, char* s) {
     FILE *fp;
     int status = 0;
 
@@ -117,7 +88,7 @@ void processNormalKeys(unsigned char key, int x, int y) {
         exit(0);
 }
 
-int printOglError(char *file, int line)
+int printOglError(char* file, int line)
 {
     //
     // Returns 1 if an OpenGL error occurred, 0 otherwise.
@@ -139,13 +110,13 @@ void printShaderInfoLog(GLuint obj)
 {
     int infologLength = 0;
     int charsWritten  = 0;
-    char *infoLog;
+    char* infoLog;
 
     glGetShaderiv(obj, GL_INFO_LOG_LENGTH, &infologLength);
 
     if (infologLength > 0)
     {
-        infoLog = (char *)malloc(infologLength);
+        infoLog = (char* )malloc(infologLength);
         glGetShaderInfoLog(obj, infologLength, &charsWritten, infoLog);
         printf("%s\n",infoLog);
         free(infoLog);
@@ -156,13 +127,13 @@ void printProgramInfoLog(GLuint obj)
 {
     int infologLength = 0;
     int charsWritten  = 0;
-    char *infoLog;
+    char* infoLog;
 
     glGetProgramiv(obj, GL_INFO_LOG_LENGTH,&infologLength);
 
     if (infologLength > 0)
     {
-        infoLog = (char *)malloc(infologLength);
+        infoLog = (char* )malloc(infologLength);
         glGetProgramInfoLog(obj, infologLength, &charsWritten, infoLog);
         printf("%s\n",infoLog);
         free(infoLog);
@@ -170,17 +141,17 @@ void printProgramInfoLog(GLuint obj)
 }
 
 void setShaders() {
-    char *vs = NULL,*fs = NULL,*fs2 = NULL;
+    char* vs = NULL, *fs = NULL, *fs2 = NULL;
 
     v = glCreateShader(GL_VERTEX_SHADER);
     f = glCreateShader(GL_FRAGMENT_SHADER);
     f2 = glCreateShader(GL_FRAGMENT_SHADER);
 
-    vs = textFileRead("shader1.vert");
-    fs = textFileRead("shader1.frag");
+    vs = textFileRead(const_cast<char *>("shader1.vert"));
+    fs = textFileRead(const_cast<char *>("shader1.frag"));
 
-    const char * vv = vs;
-    const char * ff = fs;
+    const char* vv = vs;
+    const char* ff = fs;
 
     glShaderSource(v, 1, &vv,NULL);
     glShaderSource(f, 1, &ff,NULL);
@@ -204,8 +175,43 @@ void setShaders() {
 
     glUseProgram(p);
 
-    loc = glGetUniformLocation(p,"time");
+    cout << glGetError() << endl;
+    GLint loc_world23 = glGetUniformLocation(p, "world23");
+    vector<uint8_t>* zero_buffer;
+    uint32_t size = sizeof(GLfloat) * 6;
+    zero_buffer->resize(size);
+    const void* zero = &(*zero_buffer)[0];
+    glUniformMatrix2x3fv(loc, 1, false, reinterpret_cast<const GLfloat*>(zero));
+    cout << glGetError() << endl;
 }
 
+int main(int argc, char* *argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
+    glutInitWindowPosition(100, 100);
+    glutInitWindowSize(320, 320);
+    glutCreateWindow("Sample");
 
+    glutDisplayFunc(renderScene);
+    glutIdleFunc(renderScene);
+    glutReshapeFunc(changeSize);
+    glutKeyboardFunc(processNormalKeys);
 
+    glEnable(GL_DEPTH_TEST);
+    glClearColor(1.0,1.0,1.0,1.0);
+//  glEnable(GL_CULL_FACE);
+
+    glewInit();
+    if (glewIsSupported("GL_VERSION_2_0"))
+        printf("Ready for OpenGL 2.0\n");
+    else {
+        printf("OpenGL 2.0 not supported\n");
+        exit(1);
+    }
+
+    setShaders();
+
+    glutMainLoop();
+
+    return 0;
+}
