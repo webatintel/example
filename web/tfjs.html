@@ -1,0 +1,78 @@
+<script src='../gyagp/tfjs/dist/bin/tfjs-core/dist/tf-core.js'></script>
+<script src='../gyagp/tfjs/dist/bin/tfjs-backend-cpu/dist/tf-backend-cpu.js'></script>
+<script src='../gyagp/tfjs/dist/bin/tfjs-backend-webgl/dist/tf-backend-webgl.js'></script>
+<script src='../gyagp/tfjs/dist/bin/tfjs-backend-webgpu/dist/tf-backend-webgpu.js'></script>
+<script src='https://unpkg.com/@tensorflow/tfjs-layers@latest/dist/tf-layers.js' crossorigin='anonymous'></script>
+<script src='https://unpkg.com/@tensorflow/tfjs-converter@latest/dist/tf-converter.js' crossorigin='anonymous'></script>
+<script src='https://unpkg.com/@tensorflow/tfjs-backend-wasm@latest/dist/tf-backend-wasm.js'
+  crossorigin='anonymous'></script>
+
+
+<script>
+  function aggregateKernelTime(kernels) {
+    const aggregatedKernelTime = {};
+    kernels.forEach(kernel => {
+      const oldAggregatedKernelTime = aggregatedKernelTime[kernel.name];
+      if (oldAggregatedKernelTime == null) {
+        aggregatedKernelTime[kernel.name] = kernel.kernelTimeMs;
+      } else {
+        aggregatedKernelTime[kernel.name] =
+          oldAggregatedKernelTime + kernel.kernelTimeMs;
+      }
+    });
+
+    return Object.entries(aggregatedKernelTime)
+      .map(([name, timeMs]) => ({ name, timeMs }))
+      .sort((a, b) => b.timeMs - a.timeMs);
+  }
+
+  async function downloadValuesFromTensorContainer(tensorContainer) {
+    let valueContainer;
+    if (tensorContainer instanceof tf.Tensor) {
+      valueContainer = await tensorContainer.data();
+    } else if (Array.isArray(tensorContainer)) {
+      // Start value downloads from all tensors.
+      const valuePromiseContainer = tensorContainer.map(async item => {
+        if (item instanceof tf.Tensor) {
+          return item.data();
+        }
+        return item;
+      });
+      // Wait until all values are downloaded.
+      valueContainer = await Promise.all(valuePromiseContainer);
+    } else if (tensorContainer != null && typeof tensorContainer === 'object') {
+      const valuePromiseContainer = [];
+      // Start value downloads from all tensors.
+      for (const property in tensorContainer) {
+        if (tensorContainer[property] instanceof tf.Tensor) {
+          valuePromiseContainer.push(tensorContainer[property].data());
+        } else {
+          valuePromiseContainer.push(tensorContainer[property]);
+        }
+      }
+      // Wait until all values are downloaded.
+      valueContainer = await Promise.all(valuePromiseContainer);
+    }
+    return valueContainer;
+  }
+
+  async function main() {
+    await tf.setBackend('webgpu');
+
+    const url = 'https://storage.googleapis.com/learnjs-data/mobilenet_v2_100_fused/model.json';
+    model = await tf.loadGraphModel(url);
+
+    let kernelInfo = await tf.profile(async () => {
+      const input = tf.randomNormal([1, 224, 224, 3]);
+      const result = await model.predict(input);
+      await downloadValuesFromTensorContainer(result);
+      tf.dispose(result);
+    });
+
+    kernelInfo.kernels = kernelInfo.kernels.sort((a, b) => b.kernelTimeMs - a.kernelTimeMs);
+    kernelInfo.aggregatedKernels = aggregateKernelTime(kernelInfo.kernels);
+
+    console.log(kernelInfo);
+  }
+  main();
+</script>
