@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <!-- http://stackoverflow.com/q/18826570/1768303 -->
+  <!-- based on http://dbaron.org/log/20100309-faster-timeouts -->
+  <!-- requires IE10 or Chrome. Firefox doesn't support MessageChannel yet -->
+
+</head>
+<body>
+  <div id="output"></div>
+  <script type="text/javascript">
+
+    // setTimeoutMC via MessageChannel
+
+    (function () {
+      "use strict";
+      var i = 0;
+      var timeouts = {};
+      var setApiName = "setTimeoutMC";
+      var clearApiName = "clearTimeoutMC";
+
+      var channel = new MessageChannel();
+
+      function post(fn) {
+        if (i === 0x100000000) // max queue size
+          i = 0;
+        if (++i in timeouts)
+          throw new Error(setApiName + " queue overflow.");
+        timeouts[i] = fn;
+        channel.port2.postMessage(i);
+        return i;
+      }
+
+      channel.port1.onmessage = function (ev) {
+        var id = ev.data;
+        var fn = timeouts[id];
+        if (fn) {
+          delete timeouts[id];
+          fn();
+        }
+      }
+
+      function clear(id) {
+        delete timeouts[id];
+      }
+
+      channel.port1.start();
+      channel.port2.start();
+
+      window[setApiName] = post;
+      window[clearApiName] = clear;
+    })();
+
+    // setTimeoutPM via window.postMessage
+
+    (function () {
+      "use strict";
+      var i = 0;
+      var timeouts = {};
+      var setApiName = "setTimeoutPM";
+      var clearApiName = "clearTimeoutPM";
+      var messageName = setApiName + new Date().getTime();
+
+      function post(fn) {
+        if (i === 0x100000000) // max queue size
+          i = 0;
+        if (++i in timeouts)
+          throw new Error(setApiName + " queue overflow.");
+        timeouts[i] = fn;
+        window.postMessage({ type: messageName, id: i }, "*");
+        return i;
+      }
+
+      function receive(ev) {
+        if (ev.source !== window)
+          return;
+        var data = ev.data;
+        if (data && data instanceof Object && data.type === messageName) {
+          ev.stopPropagation();
+          var id = ev.data.id;
+          var fn = timeouts[id];
+          if (fn) {
+            delete timeouts[id];
+            fn();
+          }
+        }
+      }
+
+      function clear(id) {
+        delete timeouts[id];
+      }
+
+      window.addEventListener("message", receive, true);
+      window[setApiName] = post;
+      window[clearApiName] = clear;
+    })();
+
+    // timing
+
+    function runtest() {
+      var output = document.getElementById("output");
+      var outputText = document.createTextNode("");
+      output.appendChild(outputText);
+      function printOutput(line) {
+        outputText.data += line + "\n";
+      }
+
+      var n = 20000000;
+      var i = 0;
+      var startTime = Date.now();
+      setTimeoutMC(testMC);
+
+      function testMC() {
+        if (++i === n) {
+          var endTime = Date.now();
+          printOutput(n + " iterations of setTimeoutMC took " + (endTime - startTime) + " milliseconds.");
+          i = 0;
+          startTime = Date.now();
+          setTimeoutPM(testPM, 0);
+        } else {
+          setTimeoutMC(testMC);
+        }
+      }
+
+      function testPM() {
+        if (++i === n) {
+          var endTime = Date.now();
+          printOutput(n + " iterations of setTimeoutPM took " + (endTime - startTime) + " milliseconds.");
+          i = 0;
+          startTime = Date.now();
+          setTimeout(test, 0);
+        } else {
+          setTimeoutPM(testPM);
+        }
+      }
+
+      function test() {
+        if (++i === n) {
+          var endTime = Date.now();
+          printOutput(n + " iterations of setTimeout(0) took " + (endTime - startTime) + " milliseconds.");
+        }
+        else {
+          setTimeout(test, 0);
+        }
+      }
+    }
+    runtest();
+  </script>
+</body>
