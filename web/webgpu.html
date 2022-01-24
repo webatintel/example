@@ -1,0 +1,155 @@
+<body>
+  <script>
+    async function main() {
+      const adapter = await navigator.gpu.requestAdapter();
+      const device = await adapter.requestDevice();
+
+      sm = device.createShaderModule({
+        code: `
+  var<private> prvVarScalar : f32 = 0f;
+
+    struct prvStruct1
+    {
+      a : f32;
+    };
+
+    struct prvStruct2
+    {
+      b : f32;
+      a : prvStruct1;
+    };
+
+    var<private> prvTemp : prvStruct2;
+
+    struct structWithf32_1
+    {
+      a : f32;
+      b : vec3<f32>;
+      c : mat2x3<f32>;
+      @size(4) d : f32;
+      g : array<f32, 3>;
+    };
+
+    struct structWithf32_2
+    {
+      a : f32;
+      b : vec4<f32>;
+      c : mat3x2<f32>;
+      @size(8) d : f32;
+    };
+
+    struct structWithf32_3
+    {
+      a : vec3<f32>;
+      c : mat3x4<f32>;
+      @size(8) d : f32;
+      @align(16) e : structWithf32_2;
+      @align(16) f : @stride(32) array<f32, 3>;
+    };
+
+    struct structWithf32_4
+    {
+      @align(16) a : @stride(16) array<vec4<f32>>;
+    };
+
+    @group(0) @binding(0) var<uniform> uniformWithf32 : structWithf32_3;
+
+    @group(0) @binding(1) var<storage, read> storageWithf32 : structWithf32_1;
+
+    @group(0) @binding(2) var<storage, read_write> rwStorageWithf32 : structWithf32_4;
+
+    struct VertexOutput
+    {
+      @builtin(position) pos : vec4<f32>;
+      @location(0) a : vec2<f32>;
+    };
+
+    fn usePrivateVar(t
+                     : f32)
+    {
+      prvVarScalar = t + 1.0;
+    }
+
+    @stage(vertex) fn vertexMain(@location(0) inputf32
+                                    : f32,
+                                      @location(1) inputf32x2
+                                    : vec2<f32>)
+        ->VertexOutput
+    {
+      var<function> a : VertexOutput;
+      a.pos = vec4<f32>();
+      usePrivateVar(inputf32 + 1.0);
+      a.a = vec2<f32>(0.0, 2.0 * prvVarScalar);
+      return a;
+    }
+
+    @stage(fragment) fn fragmentMain(@location(0) a
+                                        : vec2<f32>)
+        ->
+        @location(0) vec4<f32>
+    {
+      return vec4<f32>();
+    }
+
+    /*
+    For compute shader
+    */
+    var<workgroup> wgVarWithf32 : f32;
+
+    @stage(compute) @workgroup_size(1) fn computeMain()
+    {
+      var t : vec2<f32>;
+      t = uniformWithf32.c[1].xy;
+      rwStorageWithf32.a[0] = storageWithf32.a * uniformWithf32.c[0];
+      wgVarWithf32 = storageWithf32.a;
+    }
+
+  `
+      });
+      info = await sm.compilationInfo();
+
+      pipeline = device.createRenderPipeline({
+        vertex: {
+          module: sm,
+          entryPoint: 'vertexMain',
+          buffers: [
+            {
+              arrayStride: 32,
+              attributes: [
+                {
+                  shaderLocation: 0,
+                  offset: 0,
+                  format: 'float32',
+                },
+                {
+                  shaderLocation: 1,
+                  offset: 0,
+                  format: 'float32x2',
+                },
+              ],
+            },
+          ],
+        },
+        fragment: undefined,
+        primitive: {
+          topology: 'triangle-list',
+          cullMode: 'back',
+        },
+      });
+      device.pushErrorScope("validation");
+      await device.popErrorScope();
+
+      pipeline = device.createComputePipeline({
+        compute: {
+          module: sm,
+          entryPoint: 'computeMain'
+        }
+      })
+      device.pushErrorScope("validation");
+      await device.popErrorScope();
+
+    };
+
+    main();
+  </script>
+</body>
