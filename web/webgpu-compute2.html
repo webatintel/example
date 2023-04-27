@@ -1,0 +1,62 @@
+<script>
+    (async () => {
+        const adapter = await navigator.gpu.requestAdapter();
+        const device = await adapter.requestDevice();
+        const input = Array(10).fill().map((_, i) => i + 1);
+        const bufferSize = input.length * 4;
+        const workgroup_size = Math.min(input.length, 64);
+        const inputBuffer = device.createBuffer({
+            mappedAtCreation: true,
+            size: bufferSize,
+            usage: GPUBufferUsage.STORAGE
+        });
+        const resultBuffer = device.createBuffer({
+            size: bufferSize,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
+        });
+        const outputBuffer = device.createBuffer({
+            size: bufferSize,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+        });
+        const shaderModule = device.createShaderModule({
+            code: `
+      [[block]] struct Numbers {
+        numbers: array<i32>;
+      };
+      [[group(0), binding(0)]] var<storage> input : [[access(read)]] Numbers;
+      [[group(0), binding(1)]] var<storage> result : [[access(write)]] Numbers;
+
+      [[stage(compute), workgroup_size(${workgroup_size})]]
+      fn main([[builtin(global_invocation_id)]] global_id : vec3<u32>) {
+        let index : u32 = u32(global_id.x);
+        result.numbers[index] = input.numbers[index] * input.numbers[index];
+      }
+    `
+        });
+        const computePipeline = device.createComputePipeline({
+            compute: { module: shaderModule, entryPoint: "main" }
+        });
+        const bindGroup = device.createBindGroup({
+            layout: computePipeline.getBindGroupLayout(0),
+            entries: [
+                { binding: 0, resource: { buffer: inputBuffer } },
+                { binding: 1, resource: { buffer: resultBuffer } }
+            ]
+        });
+
+        new Int32Array(inputBuffer.getMappedRange()).set(input);
+        inputBuffer.unmap();
+
+        const commandEncoder = device.createCommandEncoder();
+        const computePassEncoder = commandEncoder.beginComputePass();
+        computePassEncoder.setPipeline(computePipeline);
+        computePassEncoder.setBindGroup(0, bindGroup);
+        computePassEncoder.dispatch(Math.max(input.length / workgroup_size, 1), 1, 1);
+        computePassEncoder.endPass();
+        commandEncoder.copyBufferToBuffer(resultBuffer, 0, outputBuffer, 0, bufferSize);
+        device.queue.submit([commandEncoder.finish()]);
+
+        await outputBuffer.mapAsync(GPUMapMode.READ);
+        console.log(new Int32Array(outputBuffer.getMappedRange()));
+    })();
+</script>
