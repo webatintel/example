@@ -21,7 +21,7 @@ function processUrls(urls, localBuild) {
     let name =
         urls[i].split('/')[0].replace('tfjs-', '').replace('backend-', '');
     if (localBuild.includes(name)) {
-      urls[i] = `../../gyagp/tfjs/dist/bin/${urls[i]}`;
+      urls[i] = `../../tfjs/dist/bin/${urls[i]}`;
     } else {
       urls[i] =
           `https://unpkg.com/@tensorflow/${urls[i].replace('/', '@latest/')}`;
@@ -35,6 +35,8 @@ async function loadTFJS(localBuild) {
     'tfjs-backend-cpu/dist/tf-backend-cpu.js',
     'tfjs-backend-webgl/dist/tf-backend-webgl.js',
     'tfjs-backend-webgpu/dist/tf-backend-webgpu.js',
+    'tfjs-layers/dist/tf-layers.js',
+    'tfjs-converter/dist/tf-converter.js',
     'tfjs-backend-wasm/dist/tf-backend-wasm.js',
   ];
 
@@ -45,13 +47,20 @@ async function loadTFJS(localBuild) {
 }
 
 async function main() {
-  let localBuild = ['webgl', 'webgpu', 'cpu', 'wasm', 'core'];
+  let localBuild = ['webgl', 'webgpu', 'cpu', 'wasm', 'core', 'converter'];
   await loadTFJS(localBuild);
+
   await tf.setBackend('webgl');
-  tf.setBackend('cpu')
-  inputs.x = tf.tensor(x, [1, 12, 10, 816])
-  inputs.filter = tf.tensor(w, [3, 3, 816, 1])
-  let out_reference = tf.fused.depthwiseConv2d(inputs);
+  const modelUrl = 'https://tfhub.dev/google/tfjs-model/imagenet/mobilenet_v3_small_075_224/classification/5/default/1';
+  const model = await tf.loadGraphModel(modelUrl, {fromTFHub: true});
+  const zeros = tf.zeros([1, 224, 224, 3]);
+  model.predict(zeros).print();
+
+  await tf.setBackend('webgpu');
+  div255Tensor = tf.add(tf.zeros([224, 224, 3]), 1/255);
+  mul = tf.mul(div255Tensor, div255Tensor);
+  console.log(await div255Tensor.data());
+  console.log(await mul.data());
 }
 
 main();
