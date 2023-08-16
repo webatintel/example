@@ -1,0 +1,139 @@
+<script>
+  'use strict';
+  const ops = ['+', '-', '*', '/', '%'];
+
+  function getRandomInt(max) {
+    return Math.floor(Math.random() * max);
+  }
+
+  async function runOne(device, type, op) {
+    const size = 1024 * 1024 * 4;
+    const bufferSize = size * 4;
+    const querySetCount = 2;
+
+    let inputData0, inputData1;
+    if (type === 'i32') {
+      inputData0 = new Int32Array(Array.from({ length: size }, () => getRandomInt(200)));
+      inputData1 = new Int32Array(Array.from({ length: size }, () => getRandomInt(200)));
+    } else {
+      inputData0 = new Uint32Array(Array.from({ length: size }, () => getRandomInt(200)));
+      inputData1 = new Uint32Array(Array.from({ length: size }, () => getRandomInt(200)));
+    }
+
+    const inputBuffer0 = device.createBuffer({
+      size: bufferSize,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+    });
+    const inputBuffer1 = device.createBuffer({
+      size: bufferSize,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+    });
+    device.queue.writeBuffer(inputBuffer0, 0, inputData0);
+    device.queue.writeBuffer(inputBuffer1, 0, inputData1);
+
+    const commandEncoder = device.createCommandEncoder();
+
+    const computePassDescriptor = {};
+    const querySet = device.createQuerySet({
+      type: 'timestamp',
+      count: querySetCount,
+    });
+    computePassDescriptor.timestampWrites = {
+      querySet: querySet,
+      beginningOfPassWriteIndex: 0,
+      endOfPassWriteIndex: 1,
+    };
+    const computePassEncoder = commandEncoder.beginComputePass(computePassDescriptor);
+
+    const shaderModule = device.createShaderModule({
+      code: `
+      @group(0) @binding(0) var<storage, read> input0: array<${type}>;
+      @group(0) @binding(1) var<storage, read> input1: array<${type}>;
+      @group(0) @binding(2) var<storage, read_write> result: array<${type}>;
+      @compute @workgroup_size(64, 1, 1)
+      fn main(@builtin(global_invocation_id) globalId : vec3<u32>) {
+        if (globalId.x >= ${size}) {
+          return;
+        }
+        result[globalId.x] = input0[globalId.x] ${op} input1[globalId.x];
+      }
+    `
+    });
+
+    const computePipeline = device.createComputePipeline({
+      compute: { module: shaderModule, entryPoint: "main" },
+      layout: 'auto',
+    });
+
+    const resultBuffer = device.createBuffer({
+      size: bufferSize,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
+    });
+    const bindGroup = device.createBindGroup({
+      layout: computePipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: { buffer: inputBuffer0 } },
+        { binding: 1, resource: { buffer: inputBuffer1 } },
+        { binding: 2, resource: { buffer: resultBuffer } },
+      ]
+    });
+
+    computePassEncoder.setPipeline(computePipeline);
+    computePassEncoder.setBindGroup(0, bindGroup);
+    computePassEncoder.dispatchWorkgroups(Math.ceil(size / 64));
+    computePassEncoder.end();
+
+    const outputBuffer = device.createBuffer({
+      size: bufferSize,
+      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+    });
+    commandEncoder.copyBufferToBuffer(resultBuffer, 0, outputBuffer, 0, bufferSize);
+
+    const queryResolveBuffer = device.createBuffer({
+      size: querySetCount * 8,
+      usage: GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST | GPUBufferUsage.QUERY_RESOLVE,
+    });
+    commandEncoder.resolveQuerySet(
+      querySet, 0, querySetCount, queryResolveBuffer, 0);
+
+    const queryStagingBuffer = device.createBuffer({
+      size: querySetCount * 8,
+      usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+    });
+
+    commandEncoder.copyBufferToBuffer(
+      queryResolveBuffer, 0, queryStagingBuffer, 0,
+      querySetCount * 8);
+
+    device.queue.submit([commandEncoder.finish()]);
+
+    await queryStagingBuffer.mapAsync(GPUMapMode.READ);
+    const arrayBuffer = new BigUint64Array(queryStagingBuffer.getMappedRange());
+    const time = Number(arrayBuffer[1] - arrayBuffer[0]) / 1000000;
+    queryStagingBuffer.unmap();
+    queryStagingBuffer.destroy();
+    console.log(`type: ${type}, op: ${op} => ${time}ms`);
+  }
+
+  (async () => {
+    const types = ['i32', 'u32'];
+    const ops = ['+', '-', '*', '/', '%'];
+
+    const adapter = await navigator.gpu.requestAdapter();
+    const deviceDescriptor = {};
+    const requiredFeatures = [];
+    if (adapter.features.has('timestamp-query')) {
+      requiredFeatures.push('timestamp-query');
+    }
+    deviceDescriptor.requiredFeatures = requiredFeatures;
+    const device = await adapter.requestDevice(deviceDescriptor);
+
+    for (let i in ops) {
+      let op = ops[i];
+      for (let j in types) {
+        let type = types[j];
+        await runOne(device, type, op);
+      }
+    }
+  })();
+</script>
