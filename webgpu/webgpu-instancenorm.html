@@ -1,0 +1,22 @@
+<script>
+  async function main() {
+    const adapter = await navigator.gpu?.requestAdapter();
+    const requiredFeatures = ['shader-f16'];
+    const device = await adapter?.requestDevice({ requiredFeatures });
+    const code = `
+enable f16;
+
+var<workgroup> a : f32;
+@compute @workgroup_size(1, 1, 1)
+fn main() {
+  let x = vec2<f32>(a);
+}
+    `;
+
+    device.createComputePipeline({ compute: { module: device.createShaderModule({ code }) }, layout: 'auto' })
+    device.pushErrorScope('validation');
+    await device.popErrorScope();
+  }
+
+  main();
+</script>
