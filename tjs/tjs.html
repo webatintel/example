@@ -1,0 +1,57 @@
+<link rel="shortcut icon" href="#">
+
+<body>
+  <script type="module">
+    import { AutoModel, AutoProcessor, env, RawImage } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers/dist/transformers.js';
+
+    env.allowLocalModels = false;
+
+    env.backends.onnx.wasm.proxy = true;
+    env.backends.onnx.wasm.simd = true;
+    env.backends.onnx.wasm.numThreads = 4;
+
+    const model = await AutoModel.from_pretrained('briaai/RMBG-1.4');
+
+    const processor = await AutoProcessor.from_pretrained('briaai/RMBG-1.4', {
+      // Do not require config.json to be present in the repository
+      config: {
+        do_normalize: true,
+        do_pad: false,
+        do_rescale: true,
+        do_resize: true,
+        image_mean: [0.5, 0.5, 0.5],
+        feature_extractor_type: "ImageFeatureExtractor",
+        image_std: [1, 1, 1],
+        resample: 2,
+        rescale_factor: 0.00392156862745098,
+        size: { width: 1024, height: 1024 },
+      }
+    });
+
+    export const predict = async (url) => {
+      // Read image
+      const image = await RawImage.fromURL(url);
+
+      // Preprocess image
+      const { pixel_values } = await processor(image);
+
+      // Predict alpha matte
+      const { output } = await model({ input: pixel_values });
+
+      const pixelData = image.rgba();
+      // Resize mask back to original size
+      const mask = await RawImage.fromTensor(output[0].mul(255).to('uint8')).resize(image.width, image.height);
+      // Convert alpha channel to 4th channel
+      for (let i = 0; i < mask.data.length; ++i) {
+        pixelData.data[4 * i + 3] = mask.data[i];
+      }
+      return (pixelData.toSharp());
+    }
+
+    const url = 'test.png';
+    const image = await predict(url);
+    document.body.appendChild(image);
+
+  </script>
+
+</body>
